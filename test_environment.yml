@@ -1,0 +1,7 @@
+name: py311_test
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - flake8>=6
+  - python=3.11
