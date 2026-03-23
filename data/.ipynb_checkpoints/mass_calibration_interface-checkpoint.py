@@ -36,16 +36,39 @@ def setup(options):
     masscalibration.YXPARAM = options.get_string(option_section, 'YXPARAM')
 
     # Set up lensing code
+    
+    #new code NO HST
     if todo['WL']:
         WLsimcalibfile = options.get_string(option_section, 'WLsimcalibfile')
         HSTfile = options.get_string(option_section, 'HSTfile')
         MegacamFile = options.get_string(option_section, 'MegacamFile')
         DESfile = options.get_string(option_section, 'DESfile')
-        masscalibration.WL = lensing.SPTlensing(masscalibration.catalog,
-                                                WLsimcalibfile,
-                                                HSTfile, MegacamFile, DESfile,
-                                                mcType,
-                                                NPROC)
+
+    # Force-disable HST if None
+        if HSTfile == "None":
+            HSTfile = None
+
+        masscalibration.WL = lensing.SPTlensing(
+        masscalibration.catalog,
+        WLsimcalibfile,
+        None,              #FORCE HST OFF
+        None,              #Megacam off
+        DESfile,
+        mcType,
+        NPROC)
+        
+        
+        #Old code with HST
+    #if todo['WL']:
+      #  WLsimcalibfile = options.get_string(option_section, 'WLsimcalibfile')
+      #  HSTfile = options.get_string(option_section, 'HSTfile')
+      ##  MegacamFile = options.get_string(option_section, 'MegacamFile')
+       # DESfile = options.get_string(option_section, 'DESfile')
+      #  masscalibration.WL = lensing.SPTlensing(masscalibration.catalog,
+                                              #  WLsimcalibfile,
+                                              #  HSTfile, MegacamFile, DESfile,
+                                              #  mcType,
+                                              #  NPROC)
 
     return masscalibration
 

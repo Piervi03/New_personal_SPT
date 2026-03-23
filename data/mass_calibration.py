@@ -109,14 +109,23 @@ class MassCalibration:
         # Check if follow-up is available
         nobs = 0
         obsnames = []
+        
+        #NO HST
+        #if self.todo['WL'] and self.catalog['WLdata'][i] is not None:
+        #    if self.catalog['WLdata'][i]['datatype'] == 'DES':
+           #     obsnames.append('WLDES')
+        #Old code
         if self.todo['WL'] and self.catalog['WLdata'][i] is not None:
             nobs += 1
             if self.catalog['WLdata'][i]['datatype'] == 'Megacam':
-                obsnames.append('WLMegacam')
+                  obsnames.append('WLMegacam')
             elif self.catalog['WLdata'][i]['datatype'] == 'DES':
-                obsnames.append('WLDES')
+                  obsnames.append('WLDES')
             elif self.catalog['WLdata'][i]['datatype'] == 'HST':
-                obsnames.append('WLHST')
+                  obsnames.append('WLHST')
+                
+                
+                
         if self.todo['veldisp'] and self.catalog['veldisp'][i] != 0.:
             nobs += 1
             obsnames.append('disp')
@@ -248,7 +257,9 @@ class MassCalibration:
         """Returns P(obs|xi,z,p) for a single type of follow-up data."""
         # dN/dlnobs/dlnzeta at z=z_cluster from interpolation tables
         if obsname == 'WLHST':
-            lnHMF_2d = self.HMF_convos[pairname][self.catalog['SPT_ID'][dataID]]
+            #NO HST
+            return 1.0
+           # lnHMF_2d = self.HMF_convos[pairname][self.catalog['SPT_ID'][dataID]]
         else:
             lnHMF_2d = self.get_multiobs_lnHMF_z(z=self.catalog['REDSHIFT'][dataID],
                                                  z_arr=self.HMF_convos['%s_z' % pairname],
@@ -324,7 +335,9 @@ class MassCalibration:
             if obsname == 'WLMegacam':
                 LSSnoise = self.WLcalib['Megacam_LSS'][0] + self.scaling['MegacamScatterLSS'] * self.WLcalib['Megacam_LSS'][1]
             elif obsname == 'WLHST':
-                LSSnoise = self.WLcalib['HSTsim'][self.catalog['SPT_ID'][dataID]]['obs_scatter']
+                #NO HST
+                return 1.0
+                #LSSnoise = self.WLcalib['HSTsim'][self.catalog['SPT_ID'][dataID]]['obs_scatter']
             elif obsname == 'WLDES':
                 LSSnoise = 0.
             # Convolve with Gaussian LSS scatter
@@ -365,7 +378,8 @@ class MassCalibration:
             elif obsnames[i] == 'WLMegacam':
                 LSSnoise = self.WLcalib['Megacam_LSS'][0] + self.scaling['MegacamScatterLSS'] * self.WLcalib['Megacam_LSS'][1]
             elif obsnames[i] == 'WLHST':
-                LSSnoise = self.WLcalib['HSTsim'][self.catalog['SPT_ID'][dataID]]['obs_scatter']
+                return 1.0
+                #LSSnoise = self.WLcalib['HSTsim'][self.catalog['SPT_ID'][dataID]]['obs_scatter']
             elif obsnames[i] == 'WLDES':
                 LSSnoise = 0.
             obsArrTemp = np.exp(scaling_relations.lnmass2lnobs(obsnames[i],
