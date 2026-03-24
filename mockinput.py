@@ -1,7 +1,7 @@
 import h5py
 
-SPT_survey = 'data/SPT_SZ_ECS_500d_survey.txt'
-MCMF_lambda_min = 'data/MCMF_lambda_min.txt'
+SPT_survey = './New_SPT2/data/SPT_SZ_ECS_500d_survey.txt'
+MCMF_lambda_min = './New_SPT2/data/MCMF_lambda_min.txt'
 
 random_seed = 3
 
@@ -14,7 +14,9 @@ cosmology = {'Omega_m': .3, 'Ombh2': .022,
              'mnu': .06, 'nnu': 3.046,
              'h': 0.7,
              'w0': -1., 'wa': 0.,
-             'n_s': .96, 'ln1e10As': 2.948}
+             'n_s': .96, 
+             'sigma8': 0.811,#added value with fiducial cosmology
+             'ln1e10As': 2.948}
 cosmology['Omega_b'] = cosmology['Ombh2']/cosmology['h']**2
 cosmology['Ommh2'] = cosmology['Omega_m']*cosmology['h']**2
 cosmology['Omega_l'] = 1-cosmology['Omega_m']
@@ -52,11 +54,11 @@ scaling = {'Asz': .96, 'Bsz': 1.5, 'Csz': .5, 'Dsz': .2, 'zeta_min': 1.,
            'richmPivot': 3e14,
            'YXPARAM': 'SPT_XVP',
            }
-DES_WL_priors_file = './data/WLcalib_MCMF_dnf_500kpch.h5'
+DES_WL_priors_file = './New_SPT2/data/WLcalib_MCMF_dnf_500kpch.h5'
 with h5py.File(DES_WL_priors_file, 'r') as f:
     for k in f.keys():
         scaling['DES_%s' % k] = f[k][()]
-Euclid_WL_priors_file = './data/WLcalib_Euclid_baseline.h5'
+Euclid_WL_priors_file = './New_SPT2/data/WLcalib_Euclid_baseline.h5'
 with h5py.File(Euclid_WL_priors_file, 'r') as f:
     for k in f.keys():
         scaling['Euclid_%s' % k] = f[k][()]

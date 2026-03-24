@@ -13,9 +13,9 @@ import lensing
 import Mconversion_concentration
 import miscentering
 
-
 # Syntax
 # python mock_WL.py WLconfig mockconfig catalog.fits
+#python New_SPT2/mock_WL.py New_SPT2/WL_input.py New_SPT2/mockinput.py New_SPT2/data/second_catalog.fits
 
 def main():
     datetime = time.strftime("%y%m%d-%H%M%S")

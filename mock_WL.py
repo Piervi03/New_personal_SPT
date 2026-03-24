@@ -13,9 +13,9 @@ import lensing
 import Mconversion_concentration
 import miscentering
 
-
-# Syntax
-# python mock_WL.py WLconfig mockconfig catalog.fits
+#Syntax
+#python mock_WL.py WLconfig mockconfig catalog.fits
+#python New_SPT2/mock_WL.py New_SPT2/WL_input.py New_SPT2/mockinput.py New_SPT2/data/second_catalog.fits
 
 def main():
     datetime = time.strftime("%y%m%d-%H%M%S")
@@ -30,7 +30,7 @@ def main():
 
     # DES weak lensing
     mock_WL = MockUpDESWL(cosmology, sys.argv[1])
-    with h5py.File('mock_WL_DES_%s.hdf5' % datetime, 'w') as f:
+    with h5py.File('New_SPT2/data/mock_WL_DES_%s.hdf5' % datetime, 'w') as f:
         g = f.create_group('config')
         fits = fitsio.FITS(WLconfigMod.DES['source_Pz_file'])
         d = g.create_dataset('SOM_Z_MID', data=fits['nz_source']['Z_MID'][:])
@@ -51,7 +51,7 @@ def main():
 
     # Euclid weak lensing
     mock_WL = MockUpEuclidWL(cosmology, sys.argv[1])
-    with h5py.File('mock_WL_Euclid_%s.hdf5' % datetime, 'w') as f:
+    with h5py.File('New_SPT2/data/mock_WL_Euclid_%s.hdf5' % datetime, 'w') as f:
         g = f.create_group('config')
         _ = g.create_dataset('shape_noise', data=WLconfigMod.Euclid['shape_noise'])
         _ = g.create_dataset('z_s', data=mock_WL.z_s)
@@ -76,7 +76,7 @@ def main():
     mock_WL = MockUpHSTWL(cosmology, sys.argv[1])
     corr = np.ones((2, 11))
     corr[0, :] = np.linspace(0, .25, 11)
-    with h5py.File('mock_WL_HST_%s.hdf5' % datetime, 'w') as f:
+    with h5py.File('New_SPT2/data/mock_WL_HST_%s.hdf5' % datetime, 'w') as f:
         for i, name in enumerate(cat['SPT_ID']):
             if cat['Mwl_HST_200'][i] > 0:
                 res_dict = mock_WL(cat[i])

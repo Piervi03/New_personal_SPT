@@ -445,9 +445,9 @@ def boost_get_A(method, z, lam, r, Rmis, **kwargs):
     Blambda = kwargs.pop('Blambda')
     # Radial dependence normalized to 1 at 1Mpc/h [r]
     r_s = (lam/60)**(1/3) / 10**logc
-    P_r = get_Sigma(r/r_s, r_s, 1, 1) / get_Sigma(1/r_s, r_s, 1, 1)
+    P_r = get_Sigma(r/(r_s+1e-10),(r_s+1e-10), 1, 1) / (get_Sigma(1/(r_s+1e-10), r_s+1e-10, 1, 1)+1e-10)#added 1e-10
     # Simplified model for miscentered profile
-    P_at_Rmis = get_Sigma(Rmis/r_s, r_s, 1, 1) / get_Sigma(1/r_s, r_s, 1, 1)
+    P_at_Rmis = get_Sigma(Rmis/(r_s+1e-10), (r_s+1e-10), 1, 1) / (get_Sigma(1/(r_s+1e-10), r_s+1e-10, 1, 1)+1e-10)#added 1e-10
     P_r[r < Rmis] = P_at_Rmis
     # Redshift dependence
     if method == 'z_bins':
