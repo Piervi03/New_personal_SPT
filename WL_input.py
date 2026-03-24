@@ -4,7 +4,7 @@ Delta_crit = 200
 
 DES = {'WL_z_max': .94,
        # DES Y3
-       'source_p_arcmin2': 6,
+       'source_p_arcmin2': 6, #this is the number of galaxies every arcmin^2
        # From Grandis+19
        'shape_noise': .375,
        # Type of M-c scaling relation, 'Duffy08' or 'DK15' or 'Cihld18_obs' or float

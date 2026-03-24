@@ -28,7 +28,8 @@ def unwrap_self_one_cluster(arg):
 
 class SPTlensing:
     """Read lensing data and compute ln P(shear | M)."""
-
+    #it is employed to get the probability distribution the shear given mass
+    #It takes into account DES, HST and Euclid
     def __init__(self, catalog, **kwargs):
         # Set up more stuff
         self.save_shear_profiles = kwargs.pop('save_shear_profiles', False)
