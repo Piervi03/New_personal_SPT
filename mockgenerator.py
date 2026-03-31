@@ -11,6 +11,7 @@ import scaling_relations
 # Reference cosmology for which Mgas is measured
 cosmologyRef = {'Omega_m': .272, 'Omega_l': .728, 'h': .702, 'w0': -1, 'wa': 0}
 
+#python New_SPT2/mockgenerator.py path/to/config.py [catalog_name.fits]
 
 def main(configMod_file, catalog_name):
     # Input parameters and settings

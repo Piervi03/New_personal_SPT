@@ -13,9 +13,10 @@ import lensing
 import Mconversion_concentration
 import miscentering
 
-# Syntax
-# python mock_WL.py WLconfig mockconfig catalog.fits
+#Syntax
+#python mock_WL.py WLconfig mockconfig catalog.fits
 #python New_SPT2/mock_WL.py New_SPT2/WL_input.py New_SPT2/mockinput.py New_SPT2/data/second_catalog.fits
+
 
 def main():
     datetime = time.strftime("%y%m%d-%H%M%S")
@@ -29,29 +30,51 @@ def main():
     cat = Table.read(sys.argv[3])
 
     # DES weak lensing
-    mock_WL = MockUpDESWL(cosmology, sys.argv[1])
-    with h5py.File('mock_WL_DES_%s.hdf5' % datetime, 'w') as f:
-        g = f.create_group('config')
-        fits = fitsio.FITS(WLconfigMod.DES['source_Pz_file'])
-        d = g.create_dataset('SOM_Z_MID', data=fits['nz_source']['Z_MID'][:])
-        d = g.create_dataset('SOM_BINs', data=[fits['nz_source']['BIN%d' % i][:] for i in range(1, 5)])
+    #This block of code is needed to create a structure like:
+    # /config/SOM_Z_MID
+    # /config/SOM_BINs
+    # /config/shape_noise
+    #Then for each cluster we have the simulated shear data
+    # /clusters/<cluster_name>/z_cluster
+    # /clusters/<cluster_name>/r_Mpch
+    # /clusters/<cluster_name>/r_arcmin
+    # /clusters/<cluster_name>/N_source
+    # /clusters/<cluster_name>/shear_cen
+    # /clusters/<cluster_name>/shear_mis
+    # /clusters/<cluster_name>/shear_noerr
+    # /clusters/<cluster_name>/shear
+    # /clusters/<cluster_name>/shear_err
+    # /clusters/<cluster_name>/beta
+    # /clusters/<cluster_name>/tomo_weights_R
+    # /clusters/<cluster_name>/tomo_rescale
+
+    mock_WL = MockUpDESWL(cosmology, sys.argv[1])#creating a mock catalog
+    with h5py.File('second_analysis/mock_WL_DES_%s.hdf5' % datetime, 'w') as f:
+        g = f.create_group('config')#output metadata
+        fits = fitsio.FITS(WLconfigMod.DES['source_Pz_file'])#opens the file with the distribution of source over z
+        d = g.create_dataset('SOM_Z_MID', data=fits['nz_source']['Z_MID'][:])#save redshift bin center
+        d = g.create_dataset('SOM_BINs', data=[fits['nz_source']['BIN%d' % i][:] for i in range(1, 5)])#saves in the config part, the distribution in z of the sources
         d = g.create_dataset('shape_noise', data=WLconfigMod.DES['shape_noise'])
-        g = f.create_group('clusters')
-        N = 0
+        g = f.create_group('clusters')#cluster group. g now points to this group
+        N = 0 #number of elaborated clusters
+        #run over the catalog
         for i, name in enumerate(cat['SPT_ID']):
             if (cat['REDSHIFT'][i] > 0) & (cat['REDSHIFT'][i] < WLconfigMod.DES['WL_z_max']) & (cat['richness'][i] > 0.):
-                res_dict = mock_WL(cat[i])
 
-                gg = g.create_group(name)
-                d = gg.create_dataset('z_cluster', data=cat['REDSHIFT'][i])
+                res_dict = mock_WL(cat[i]) #running the simulator on one catalog row.
+                                           #it gives us a dictionary for that cluster that contains 
+                                           # radial bin centers,N_sources per radial bin, shear data, etc...
+                gg = g.create_group(name) #create a subgroup of cluster with the name of the cluster ID
+                d = gg.create_dataset('z_cluster', data=cat['REDSHIFT'][i])#creating a voice inside that to store redshift for each cluster
                 for k in res_dict.keys():
-                    d = gg.create_dataset(k, data=res_dict[k])
+                    d = gg.create_dataset(k, data=res_dict[k]) #stores every output of the simulation as an additional
+                                                                #now the group has several voices like cluster/cluster_name/key
                 N += 1
         print('DES', N, 'halos')
 
     # Euclid weak lensing
     mock_WL = MockUpEuclidWL(cosmology, sys.argv[1])
-    with h5py.File('mock_WL_Euclid_%s.hdf5' % datetime, 'w') as f:
+    with h5py.File('New_SPT2/data/mock_WL_Euclid_%s.hdf5' % datetime, 'w') as f:
         g = f.create_group('config')
         _ = g.create_dataset('shape_noise', data=WLconfigMod.Euclid['shape_noise'])
         _ = g.create_dataset('z_s', data=mock_WL.z_s)
@@ -59,6 +82,7 @@ def main():
         g = f.create_group('clusters')
         print("Start processing clusters")
         N = 0
+        #Running over the cluster catalog
         for i, name in enumerate(cat['SPT_ID']):
             if (cat['REDSHIFT'][i] > 0) & (cat['REDSHIFT'][i] < WLconfigMod.Euclid['WL_z_max']):
                 res_dict = mock_WL(cat[i])
@@ -67,6 +91,7 @@ def main():
 
                 gg = g.create_group(name)
                 d = gg.create_dataset('z_cluster', data=cat['REDSHIFT'][i])
+
                 for k in res_dict.keys():
                     d = gg.create_dataset(k, data=res_dict[k])
                 N += 1
@@ -76,7 +101,7 @@ def main():
     mock_WL = MockUpHSTWL(cosmology, sys.argv[1])
     corr = np.ones((2, 11))
     corr[0, :] = np.linspace(0, .25, 11)
-    with h5py.File('mock_WL_HST_%s.hdf5' % datetime, 'w') as f:
+    with h5py.File('New_SPT2/data/mock_WL_HST_%s.hdf5' % datetime, 'w') as f:
         for i, name in enumerate(cat['SPT_ID']):
             if cat['Mwl_HST_200'][i] > 0:
                 res_dict = mock_WL(cat[i])
@@ -98,15 +123,19 @@ def main():
 ################################################################################
 
 class MockUpDESWL:
+#The input of this class is the cosmology and the WL config. file
 
     def __init__(self, cosmology, WLconfigname):
         self.cosmology = cosmology
+        #importing the WL configuration file
         spec = importlib.util.spec_from_file_location('dummy', WLconfigname)
         self.config_mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(self.config_mod)
+
         self.Delta_crit = self.config_mod.Delta_crit
+        #computes the halo concentration c_200=R_200/R_s 
         self.MCrel = Mconversion_concentration.ConcentrationConversion(self.config_mod.DES['mcType'], cosmology, setup_interp=True)
-        self.rng = np.random.default_rng(self.config_mod.random_seed)
+        self.rng = np.random.default_rng(self.config_mod.random_seed)#random number generator
         # Read boost chain
         with open(self.config_mod.DES['DESboostfile'], 'r') as f:
             tmp = f.readline().split()[1:]
@@ -118,6 +147,7 @@ class MockUpDESWL:
         with open(self.config_mod.DES['DESmiscenterfile'], 'r') as f:
             tmp = f.readline().split()[1:]
         dat = np.mean(np.loadtxt(self.config_mod.DES['DESmiscenterfile']), axis=0)
+
         miscenter_dict = {}
         for n, name in enumerate(tmp):
             miscenter_dict[name] = dat[n]
@@ -148,19 +178,22 @@ class MockUpDESWL:
     def get_gt(self, z, beta_bin, w_r_bin):
         """Return the predicted radial shear profile for a given mass, redshift,
         and betas."""
+        #beta is b=D_ls/D_s and beta is prop. to Sigma_crit^-1
         # M200 and scale radius, wrt critical density, everything in h units
-        c = self.MCrel.calC200(self.M_Delta, z)
-        delta_c = self.Delta_crit/3 * c**3 / (np.log(1+c) - c/(1+c))
-        rs = self.r_Delta/c
-        x = self.r_arr / rs
+        c = self.MCrel.calC200(self.M_Delta, z)#calculates the c_200 value with M and z
+        delta_c = self.Delta_crit/3 * c**3 / (np.log(1+c) - c/(1+c)) #parameter of the NFW profile 
+        rs = self.r_Delta/c #scale radius
+        x = self.r_arr / rs #dimensionless radius 
         # Sigma_crit, with c^2/4piG [h Msun/Mpc^2]
-        invSigma_c = self.Dl*beta_bin/cosmo.c2_4piG
-        # Centered shear profiles for reference
+        invSigma_c = self.Dl*beta_bin/cosmo.c2_4piG #inverse critical density for each tomo. bin
+        # Centered shear profiles for reference. we calculate the sigma values and the reduced shear assume a NFW profile 
+        #It's a matrix in which you get the value of g_t for each combina. of radius from the center and redshift
         Sigma_NFW = lensing.get_Sigma(x, rs, self.rho_c_z, delta_c)
         DeltaSigma_NFW = lensing.get_DeltaSigma(x, rs, self.rho_c_z, delta_c)
         g_t_cen = DeltaSigma_NFW[:, None]*invSigma_c[None, :] / (1-Sigma_NFW[:, None]*invSigma_c[None, :])
+        #average value over the tomo bins
         g_t_cen = np.sum(g_t_cen*w_r_bin[:, 1:]*self.tomo_rescale[None, 1:], axis=1)/np.sum(w_r_bin[:, 1:], axis=1)
-        # Miscentered profiles
+        # Miscentered profiles. We calculate the same things as before but using a different center
         R_mis = self.miscenterer.get_mean_Rmis(self.cat, self.cosmology)
         Sigma_mis = lensing.get_Sigma_mis(self.r_arr, rs, self.rho_c_z, delta_c, R_mis)
         DeltaSigma_mis = lensing.get_DeltaSigma_mis(self.r_arr, rs, self.rho_c_z, delta_c, R_mis)
@@ -171,6 +204,8 @@ class MockUpDESWL:
 
     def draw_source_weight(self, BIN, N):
         """Return `N` draws from the distribution of weights of tomo bin `BIN`, labeled from 1 to 4."""
+        #this function draws w weights from a distribution in order to get have them for each bin.
+        #they are used to calculate the tang. shear. It outputs a 1d array of lenght N for that particular bin 
         devs = self.rng.random(N)
         w = np.interp(devs, self.source_weights_cum[BIN-2], self.source_weights[0])
         return w
@@ -178,6 +213,9 @@ class MockUpDESWL:
     def get_source_gals(self, z_cl):
         """Return stochastic realization of source galaxy redshifts and weights for each radial bin.
         Assume equal number of sources in all tomographic bins."""
+        #It gives us: 
+        #1)total number of sources in each radial bin
+        #2)a 2d array where each grid element is the sum of w values accordingly to the radial and tomographic bin.
         area_bin_arcmin = np.pi * (self.r_arcmin_edges[1:]**2 - self.r_arcmin_edges[:-1]**2)
         w_dist_b = 3*[None]
         N_r = np.zeros(len(area_bin_arcmin))
@@ -193,11 +231,13 @@ class MockUpDESWL:
 
     def get_beta(self, z_cl):
         """Return `<beta>` and `<beta**2>` for the Y3 redshift distributions."""
+        #gives us for each bin the average (according to the distribution) beta value
+        #the output is an array with dimension 3
         beta = np.array([cosmo.dA_two_z(z_cl, z, self.cosmology)/cosmo.dA(z, self.cosmology) for z in self.source_z['z']])
         beta[self.source_z['z'] <= z_cl] = 0
         beta_bin = np.sum(self.source_z['allbins']*beta[None, :], axis=1)/np.sum(self.source_z['allbins'], axis=1)
         return beta_bin
-
+    #we get the cluster contamination amplitude. It gives us the shear profile taking into account contamination
     def apply_cl_mem_contamination(self, z, Rmis, g_t):
         A = lensing.boost_get_A('Gausssmooth', z, self.cat['richness'], self.r_arr, Rmis, **self.boost_dict)
         reduced_shear_cont = 1/(1+A) * g_t
@@ -205,6 +245,7 @@ class MockUpDESWL:
 
     def __call__(self, cat):
         """Wrapper function: Call all workers and return everything."""
+        #it gives us the dictionary we used before with all the relevant quantities
         self.cat = cat
         z_cl = cat['REDSHIFT']
         self.M_Delta = cat['Mwl_DES_200']
@@ -250,6 +291,17 @@ class MockUpDESWL:
                     'tomo_weights_R': w_r_bin[good_idx],
                     'tomo_rescale': self.tomo_rescale,
                     }
+        # r_Mpch: kept radial centers in Mpc/h
+        # r_arcmin: kept radial centers in arcmin
+        # N_source: number of sources per kept radial bin
+        # shear_cen: centered shear
+        # shear_mis: miscentered shear
+        # shear_noerr: contaminated, noiseless shear
+        # shear: final noisy mock measurement
+        # shear_err: statistical shear uncertainty
+        # beta: tomo-bin mean beta values
+        # tomo_weights_R: weighted tomo source counts per radius
+        # tomo_rescale: tomo rescaling factors
         return res_dict
 
 

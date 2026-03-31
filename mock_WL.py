@@ -17,6 +17,7 @@ import miscentering
 #python mock_WL.py WLconfig mockconfig catalog.fits
 #python New_SPT2/mock_WL.py New_SPT2/WL_input.py New_SPT2/mockinput.py New_SPT2/data/second_catalog.fits
 
+
 def main():
     datetime = time.strftime("%y%m%d-%H%M%S")
     spec = importlib.util.spec_from_file_location('dummy', sys.argv[1])
@@ -48,7 +49,7 @@ def main():
     # /clusters/<cluster_name>/tomo_rescale
 
     mock_WL = MockUpDESWL(cosmology, sys.argv[1])#creating a mock catalog
-    with h5py.File('New_SPT2/data/mock_WL_DES_%s.hdf5' % datetime, 'w') as f:
+    with h5py.File('second_analysis/mock_WL_DES_%s.hdf5' % datetime, 'w') as f:
         g = f.create_group('config')#output metadata
         fits = fitsio.FITS(WLconfigMod.DES['source_Pz_file'])#opens the file with the distribution of source over z
         d = g.create_dataset('SOM_Z_MID', data=fits['nz_source']['Z_MID'][:])#save redshift bin center
@@ -189,7 +190,7 @@ class MockUpDESWL:
         #It's a matrix in which you get the value of g_t for each combina. of radius from the center and redshift
         Sigma_NFW = lensing.get_Sigma(x, rs, self.rho_c_z, delta_c)
         DeltaSigma_NFW = lensing.get_DeltaSigma(x, rs, self.rho_c_z, delta_c)
-        g_t_cen = DeltaSigma_NFW[:, None]*invSigma_c[None, :] / (1-Sigma_NFW[:, None]*invSigma_c[None, :]
+        g_t_cen = DeltaSigma_NFW[:, None]*invSigma_c[None, :] / (1-Sigma_NFW[:, None]*invSigma_c[None, :])
         #average value over the tomo bins
         g_t_cen = np.sum(g_t_cen*w_r_bin[:, 1:]*self.tomo_rescale[None, 1:], axis=1)/np.sum(w_r_bin[:, 1:], axis=1)
         # Miscentered profiles. We calculate the same things as before but using a different center

@@ -1,4 +1,4 @@
-random_seed = 0
+random_seed = 1
 
 Delta_crit = 200
 
